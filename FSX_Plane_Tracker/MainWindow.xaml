@@ -7,13 +7,14 @@
         mc:Ignorable="d"
         xmlns:m="clr-namespace:Microsoft.Maps.MapControl.WPF;assembly=Microsoft.Maps.MapControl.WPF"
         xmlns:db="clr-namespace:Codeplex.Dashboarding;assembly=Codeplex.Dashboarding"
-        Title="MainWindow" Height="550" Width="700">
+        Title="MainWindow" Height="550" Width="700" Closing="Window_Closing">
     <Grid Height="500">
         <Grid Height="250" Width="680" VerticalAlignment="Top">
             <m:Map CredentialsProvider="AkIkAsKzzXkSWT54vfugNilSzxbrvckDvprWj-ZdpQ-WjbabgA-Rx75wJJ1Je8sf" Margin="10,10,10,11"/>
         </Grid>
         <Grid Height="250" Width="680" VerticalAlignment="Bottom">
-            <db:Dial360 Minimum="0" Maximum="5000" Value="1000" Margin="10,10,510,80" />
+            <db:Dial360 Minimum="0" Maximum="5000" Value="1000" Margin="10,10,499,70" FontSize="11" />
+            <Button x:Name="button" Content="Not connected!" HorizontalAlignment="Left" Margin="545,70,0,0" VerticalAlignment="Top" Width="102" Click="button_Click"/>
         </Grid>
     </Grid>
 </Window>
