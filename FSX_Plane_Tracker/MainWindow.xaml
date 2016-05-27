@@ -10,7 +10,7 @@
         Title="MainWindow" Height="550" Width="700" Closing="Window_Closing">
     <Grid Height="500">
         <Grid Height="250" Width="680" VerticalAlignment="Top">
-            <m:Map CredentialsProvider="AkIkAsKzzXkSWT54vfugNilSzxbrvckDvprWj-ZdpQ-WjbabgA-Rx75wJJ1Je8sf" Margin="10,10,10,11"/>
+            <m:Map Name="flightmap" CredentialsProvider="AkIkAsKzzXkSWT54vfugNilSzxbrvckDvprWj-ZdpQ-WjbabgA-Rx75wJJ1Je8sf" Mode="AerialWithLabels" Margin="10,10,10,11"/>
         </Grid>
         <Grid Height="250" Width="680" VerticalAlignment="Bottom">
             <db:Dial360 Minimum="0" Maximum="5000" Value="1000" Margin="10,10,499,70" FontSize="11" />
