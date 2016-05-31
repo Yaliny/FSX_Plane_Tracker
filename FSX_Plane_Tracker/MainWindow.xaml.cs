@@ -18,18 +18,19 @@ namespace FSX_Plane_Tracker
     {
         private static SimConnect sc = null;
         private const int WM_USER_SIMCONNECT = 0;
-        static string lon = null;
-        static string lat = null;
-        static string alt = null;
+        static double lon;
+        static double lat;
+        static double alt;
         enum SIMCONNECT_DATA_DEFINITION_ID
         {
             planeLocation
         }
+
         struct planeLocation
         {
-            public float longitude;
-            public float latitude;
-            public float altitude;
+            public double longitude;
+            public double latitude;
+            public double altitude;
         }
         enum DATA_REQUEST_ID { REQUEST_1 }
         //receiving messages
@@ -46,17 +47,26 @@ namespace FSX_Plane_Tracker
 
         private void scMessageProcess()
         {
-            sc.ReceiveMessage();
+            bool ok = false;
+            while (!ok)
+            {
+                try
+                {
+                    sc.ReceiveMessage();
+                    ok = true;
+                }
+                catch (Exception)
+                {
+                    ok = false;
+                }
+            }
         }
 
         public MainWindow()
         {
             InitializeComponent();
-
             var thread = new Thread(new ThreadStart(() => ConnectToSimConnect()));
             thread.Start();
-            init();
-            location();
         }
 
         void location()
@@ -69,46 +79,26 @@ namespace FSX_Plane_Tracker
             sc.OnRecvSimobjectData += new SimConnect.RecvSimobjectDataEventHandler(simconnect_OnRecvSimobjectData);
         }
 
-        //private static void relocate(string lon, string lat, string alt)
-        //{
-        //    // Parse the information of the button's Tag property
-        //    string[] tagInfo = ((Button)sender).Tag.ToString().Split(' ');
-        //    Location  center = (Location)locConverter.ConvertFrom(tagInfo[0]);
-        //    double zoom = System.Convert.ToDouble(tagInfo[1]);
-            
-        //    // Set the map view
-        //    flightmap.SetView(center, zoom);
-
-        //    Location mapCenter = flightmap.Center;
-        //    mapLongitude = Convert.ToDouble(lon);
-        //    double mapLatitude = Convert.ToDouble(lat);
-        //    Location center = (mapLongitude, mapLatitude);
-        //}
-
         private void ConnectToSimConnect()
         {
             while (sc == null)
             {
                 try
                 {
-                    sc = new SimConnect("testtest", IntPtr.Zero, WM_USER_SIMCONNECT, null, 0);
-                    button.Dispatcher.Invoke(
-                        System.Windows.Threading.DispatcherPriority.Normal,
-                        new Action(
-                            delegate()
-                            {
-                                button.Content = "Connected!";
-                            }
-                    ));
-                    
+                    sc = new Microsoft.FlightSimulator.SimConnect.SimConnect("VE_SC_WPF", (IntPtr)0, 0, scReady, 0);
                 }
                 catch (Exception)
                 {
                     MessageBox.Show(this, "Error!", "Error!!!", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-
-                Thread.Sleep(2000);
+                }       
+   
             }
+            init();
+            location();
+            var bgThread = new System.Threading.Thread(new System.Threading.ThreadStart(scMessageThread));
+            bgThread.IsBackground = true;
+            bgThread.Start();
+            Thread.Sleep(2000);
         }
 
         private void button_Click(object sender, RoutedEventArgs eargs)
@@ -123,17 +113,19 @@ namespace FSX_Plane_Tracker
    
         static void simconnect_OnRecvSimobjectData(SimConnect sender, SIMCONNECT_RECV_SIMOBJECT_DATA data)
         {
-            lon = data.dwData[0].ToString();
-            lat = data.dwData[1].ToString();
-            alt = data.dwData[2].ToString();
-            File.AppendAllText("flightlog.txt", "lon: " + lon + ", lat: " + lat + ", alt: " + alt);
-            //relocate(lon, lat, alt);
+            planeLocation loc = (planeLocation)data.dwData[0];
+            lon = loc.longitude;
+            lat = loc.latitude;
+            alt = loc.altitude;
+            //string test = data.dwData[0].ToString();
+            File.AppendAllText("flightlog.txt", "lon: " + lon + ", lat: " + lat + ", alt: " + alt + "\r\n");
+
         }
 
         //KOD Z WYKŁADU
         static void simconnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
         {
-            MessageBox.Show("Podłączyłem się do FSX / ESP. Naciśnij dowolny klawisz, aby zamknąć połączenie.");
+            File.AppendAllText("flightlog.txt", "Connected!\n\r");
         }
 
         static void simconnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
