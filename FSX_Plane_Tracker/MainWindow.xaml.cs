@@ -8,6 +8,9 @@ using System.Globalization;
 using Microsoft.Maps.MapControl;
 using System.Windows.Controls;
 using System.IO;
+using System.Collections.ObjectModel;
+using System.Reflection;
+using System.Security.Permissions;
 
 namespace FSX_Plane_Tracker
 {
@@ -28,6 +31,11 @@ namespace FSX_Plane_Tracker
         static double turn;
         static double heading;
         static double verticalSpeed;
+        static Map flightmap;
+        static Location center;
+        static Location currentLocation;
+        static double zoomLevel;
+        static LocationCollection route = new LocationCollection();
 
         enum SIMCONNECT_DATA_DEFINITION_ID
         {
@@ -83,13 +91,16 @@ namespace FSX_Plane_Tracker
             InitializeComponent();
             var thread = new Thread(new ThreadStart(() => ConnectToSimConnect()));
             thread.Start();
+            center = viewmap.Center;
+            flightmap = viewmap;
+            currentLocation = new Location();
         }
 
         void location()
         {
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Longitude", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Latitude", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Altitude", "meters", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Altitude", "kilometers", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Airspeed Indicated", "knots", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "ATTITUDE INDICATOR PITCH DEGREES", "degrees", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "ATTITUDE INDICATOR BANK DEGREES", "degrees", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
@@ -147,15 +158,24 @@ namespace FSX_Plane_Tracker
             turn = loc.turn;
             heading = loc.heading;
             verticalSpeed = loc.verticalSpeed;
-            //string test = data.dwData[0].ToString();
-            File.AppendAllText("flightlog.txt", "lon: " + lon + ", lat: " + lat + ", alt: " + alt + ", airspeed: " + airspeed + ", pitch: " + pitch + ", bank: " + bank + ", delta: " + delta + ", turn: " + turn + ", heading: " + heading + ", verticalSpeed: " + verticalSpeed + "\r\n");
-            //mapHandler(lon, lat, alt);
+            center.Latitude = lat;
+            center.Longitude = lon;
+            if (currentLocation.Latitude != center.Latitude && currentLocation.Longitude != center.Longitude)
+            {
+                zoomLevel = 19 - Math.Log(alt * 5.508, 2);
+                flightmap.SetView(center, zoomLevel);
+                currentLocation = flightmap.Center;
+                route.Add(flightmap.Center);
+                MapPolyline polyline = new MapPolyline();
+                polyline.Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Blue);
+                polyline.StrokeThickness = 5;
+                polyline.Opacity = 0.7;
+                polyline.Locations = new LocationCollection();
+                polyline.Locations = route;
+                flightmap.Children.Add(polyline);
+            }
         }
-
-        static void mapHandler(double lon, double lat, double alt)
-        {
-            
-        }
+        
         //KOD Z WYKŁADU
         static void simconnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
         {

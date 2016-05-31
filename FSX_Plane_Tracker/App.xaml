@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:FSX_Plane_Tracker"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        
     </Application.Resources>
 </Application>
