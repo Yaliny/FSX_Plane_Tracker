@@ -1,16 +1,8 @@
 ﻿using Microsoft.FlightSimulator.SimConnect;
-using Microsoft.Maps.MapControl.WPF;
 using System;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
-using System.Globalization;
-using Microsoft.Maps.MapControl;
-using System.Windows.Controls;
-using System.IO;
-using System.Collections.ObjectModel;
-using System.Reflection;
-using System.Security.Permissions;
+using Microsoft.Maps.MapControl.WPF;
 
 namespace FSX_Plane_Tracker
 {
@@ -20,17 +12,7 @@ namespace FSX_Plane_Tracker
     public partial class MainWindow : Window
     {
         private static SimConnect sc = null;
-        private const int WM_USER_SIMCONNECT = 0;
-        static double lon;
-        static double lat;
-        static double alt;
-        static double airspeed;
-        static double pitch;
-        static double bank;
-        static double delta;
-        static double turn;
-        static double heading;
-        static double verticalSpeed;
+        private static readonly Plane plane = new Plane();
         static Map flightmap;
         static Location center;
         static Location currentLocation;
@@ -42,30 +24,21 @@ namespace FSX_Plane_Tracker
             planeLocation
         }
 
-        struct planeLocation
-        {
-            public double longitude;
-            public double latitude;
-            public double altitude;
-            public double airspeed;
-            public double pitch;
-            public double bank;
-            public double delta;
-            public double turn;
-            public double heading;
-            public double verticalSpeed;
-
-        }
         enum DATA_REQUEST_ID { REQUEST_1 }
-        //receiving messages
-        System.Threading.EventWaitHandle scReady = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset);
-        public delegate void MyDelegate();
+        EventWaitHandle scReady = new EventWaitHandle(false, EventResetMode.AutoReset);
+
         private void scMessageThread()
         {
             while (true)
             {
                 scReady.WaitOne();
-                this.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Normal, new MyDelegate(scMessageProcess));
+                this.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Normal,
+                    new Action(
+                        delegate()
+                        {
+                            scMessageProcess();
+                        }
+                    ));
             }
         }
 
@@ -89,28 +62,29 @@ namespace FSX_Plane_Tracker
         public MainWindow()
         {
             InitializeComponent();
-            var thread = new Thread(new ThreadStart(() => ConnectToSimConnect()));
+
+            var thread = new Thread(new ThreadStart(ConnectToSimConnect));
             thread.Start();
             center = viewmap.Center;
             flightmap = viewmap;
             currentLocation = new Location();
         }
 
-        void location()
+        void setupPulling()
         {
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Longitude", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Latitude", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Altitude", "kilometers", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Airspeed Indicated", "knots", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "ATTITUDE INDICATOR PITCH DEGREES", "degrees", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "ATTITUDE INDICATOR BANK DEGREES", "degrees", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Delta Heading Rate", "degrees per second", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Turn Coordinator Ball", "number", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Heading Indicator", "degrees", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Vertical Speed", "ft/min", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-            sc.RegisterDataDefineStruct<planeLocation>(SIMCONNECT_DATA_DEFINITION_ID.planeLocation);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "AIRSPEED TRUE", "knots", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "ATTITUDE INDICATOR PITCH DEGREES", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "ATTITUDE INDICATOR BANK DEGREES", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Delta Heading Rate", "degrees per second", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Turn Coordinator Ball", "number", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Heading Indicator", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Vertical Speed", "ft/min", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+
+            sc.RegisterDataDefineStruct<PlaneStruct>(SIMCONNECT_DATA_DEFINITION_ID.planeLocation);
             sc.RequestDataOnSimObject(DATA_REQUEST_ID.REQUEST_1, SIMCONNECT_DATA_DEFINITION_ID.planeLocation, SimConnect.SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD.SECOND, 0, 0, 0, 0);
-            sc.OnRecvSimobjectData += new SimConnect.RecvSimobjectDataEventHandler(simconnect_OnRecvSimobjectData);
         }
 
         private void ConnectToSimConnect()
@@ -119,25 +93,25 @@ namespace FSX_Plane_Tracker
             {
                 try
                 {
-                    sc = new Microsoft.FlightSimulator.SimConnect.SimConnect("VE_SC_WPF", (IntPtr)0, 0, scReady, 0);
+                    sc = new SimConnect("VE_SC_WPF", (IntPtr)0, 0, scReady, 0);
                 }
                 catch (Exception)
                 {
-                    MessageBox.Show(this, "Error!", "Error!!!", MessageBoxButton.OK, MessageBoxImage.Error);
-                }       
-   
-            }
-            init();
-            location();
-            var bgThread = new System.Threading.Thread(new System.Threading.ThreadStart(scMessageThread));
-            bgThread.IsBackground = true;
-            bgThread.Start();
-            Thread.Sleep(2000);
-        }
+                }
 
-        private void button_Click(object sender, RoutedEventArgs eargs)
-        {
-            ConnectToSimConnect();
+                Thread.Sleep(2000);
+            }
+
+            setupEvents();
+            setupPulling();
+
+            var pullingThread = new Thread(new ThreadStart(scMessageThread));
+            pullingThread.IsBackground = false;
+            pullingThread.Start();
+
+            var updatingViewThread = new Thread(new ThreadStart(updateViewThread));
+            pullingThread.IsBackground = false;
+            updatingViewThread.Start();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -147,22 +121,14 @@ namespace FSX_Plane_Tracker
    
         static void simconnect_OnRecvSimobjectData(SimConnect sender, SIMCONNECT_RECV_SIMOBJECT_DATA data)
         {
-            planeLocation loc = (planeLocation)data.dwData[0];
-            lon = loc.longitude;
-            lat = loc.latitude;
-            alt = loc.altitude;
-            airspeed = loc.airspeed;
-            pitch = loc.pitch;
-            bank = loc.bank;
-            delta = loc.delta;
-            turn = loc.turn;
-            heading = loc.heading;
-            verticalSpeed = loc.verticalSpeed;
-            center.Latitude = lat;
-            center.Longitude = lon;
+            var planeStructure = (PlaneStruct)data.dwData[0];
+            plane.Update(planeStructure);
+
+            center.Latitude = plane.Latitude;
+            center.Longitude = plane.Longitude;
             if (currentLocation.Latitude != center.Latitude && currentLocation.Longitude != center.Longitude)
             {
-                zoomLevel = 19 - Math.Log(alt * 5.508, 2);
+                zoomLevel = 19 - Math.Log(plane.Altitude * 5.508, 2);
                 flightmap.SetView(center, zoomLevel);
                 currentLocation = flightmap.Center;
                 route.Add(flightmap.Center);
@@ -170,27 +136,22 @@ namespace FSX_Plane_Tracker
                 polyline.Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Blue);
                 polyline.StrokeThickness = 5;
                 polyline.Opacity = 0.7;
-                polyline.Locations = new LocationCollection();
                 polyline.Locations = route;
                 flightmap.Children.Add(polyline);
             }
         }
         
-        //KOD Z WYKŁADU
         static void simconnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
         {
-            File.AppendAllText("flightlog.txt", "Connected!\n\r");
         }
 
         static void simconnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
         {
-            MessageBox.Show("FSX / ESP zakończył połączenie.");
             closeConnection();
         }
 
         static void simconnect_OnRecvException(SimConnect sender, SIMCONNECT_RECV_EXCEPTION data)
         {
-            MessageBox.Show("Przypełzł wyjątek z FSX / ESP: " + data.dwException);
         }
 
         static private void closeConnection()
@@ -199,17 +160,42 @@ namespace FSX_Plane_Tracker
             {
                 sc.Dispose();
                 sc = null;
-                MessageBox.Show("Połączenie z FSX / ESP zamknięte.");
             }          
         }
 
-        static void init()
+        static void setupEvents()
         {
             sc.OnRecvOpen += new SimConnect.RecvOpenEventHandler(simconnect_OnRecvOpen);
             sc.OnRecvQuit += new SimConnect.RecvQuitEventHandler(simconnect_OnRecvQuit);
             sc.OnRecvException += new SimConnect.RecvExceptionEventHandler(simconnect_OnRecvException);
+            sc.OnRecvSimobjectData += new SimConnect.RecvSimobjectDataEventHandler(simconnect_OnRecvSimobjectData);
         }
 
+        void updateViewThread()
+        {
+            while(true)
+            {
+                try
+                {
+                    updateView();
+                }
+                catch(Exception)
+                {
+                }
 
+                Thread.Sleep(2000);
+            }
+        }
+
+        void updateView()
+        {
+            this.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Normal, new Action(
+                delegate ()
+                {
+                    airSpeed.Value = plane.Airspeed;
+                    debug.Text = String.Format("TRUE AS = {0}\nPITCH DEG = {1}\nBANK DEG = {2}\nHEADING DELTA = {3}\nTURN = {4}\nHEADING INDICATOR = {5}\nVERT SPEED = {6}", plane.Airspeed, plane.Pitch, plane.Bank, plane.Delta, plane.Turn, plane.Heading, plane.VerticalSpeed);
+                }
+            ));
+        }
   }
 }
