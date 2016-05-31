@@ -21,6 +21,14 @@ namespace FSX_Plane_Tracker
         static double lon;
         static double lat;
         static double alt;
+        static double airspeed;
+        static double pitch;
+        static double bank;
+        static double delta;
+        static double turn;
+        static double heading;
+        static double verticalSpeed;
+
         enum SIMCONNECT_DATA_DEFINITION_ID
         {
             planeLocation
@@ -31,6 +39,14 @@ namespace FSX_Plane_Tracker
             public double longitude;
             public double latitude;
             public double altitude;
+            public double airspeed;
+            public double pitch;
+            public double bank;
+            public double delta;
+            public double turn;
+            public double heading;
+            public double verticalSpeed;
+
         }
         enum DATA_REQUEST_ID { REQUEST_1 }
         //receiving messages
@@ -74,6 +90,13 @@ namespace FSX_Plane_Tracker
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Longitude", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Latitude", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Plane Altitude", "meters", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Airspeed Indicated", "knots", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "ATTITUDE INDICATOR PITCH DEGREES", "degrees", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "ATTITUDE INDICATOR BANK DEGREES", "degrees", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Delta Heading Rate", "degrees per second", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Turn Coordinator Ball", "number", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Heading Indicator", "degrees", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Vertical Speed", "ft/min", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.RegisterDataDefineStruct<planeLocation>(SIMCONNECT_DATA_DEFINITION_ID.planeLocation);
             sc.RequestDataOnSimObject(DATA_REQUEST_ID.REQUEST_1, SIMCONNECT_DATA_DEFINITION_ID.planeLocation, SimConnect.SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD.SECOND, 0, 0, 0, 0);
             sc.OnRecvSimobjectData += new SimConnect.RecvSimobjectDataEventHandler(simconnect_OnRecvSimobjectData);
@@ -117,11 +140,22 @@ namespace FSX_Plane_Tracker
             lon = loc.longitude;
             lat = loc.latitude;
             alt = loc.altitude;
+            airspeed = loc.airspeed;
+            pitch = loc.pitch;
+            bank = loc.bank;
+            delta = loc.delta;
+            turn = loc.turn;
+            heading = loc.heading;
+            verticalSpeed = loc.verticalSpeed;
             //string test = data.dwData[0].ToString();
-            File.AppendAllText("flightlog.txt", "lon: " + lon + ", lat: " + lat + ", alt: " + alt + "\r\n");
-
+            File.AppendAllText("flightlog.txt", "lon: " + lon + ", lat: " + lat + ", alt: " + alt + ", airspeed: " + airspeed + ", pitch: " + pitch + ", bank: " + bank + ", delta: " + delta + ", turn: " + turn + ", heading: " + heading + ", verticalSpeed: " + verticalSpeed + "\r\n");
+            //mapHandler(lon, lat, alt);
         }
 
+        static void mapHandler(double lon, double lat, double alt)
+        {
+            
+        }
         //KOD Z WYKŁADU
         static void simconnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
         {
@@ -157,9 +191,5 @@ namespace FSX_Plane_Tracker
         }
 
 
-
-
-
-
-    }
+  }
 }
