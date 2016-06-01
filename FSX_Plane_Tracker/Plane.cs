@@ -8,6 +8,7 @@ namespace FSX_Plane_Tracker
 {
     public class Plane
     {
+        const int N = 100;
         public double Longitude { get; private set; }
         public double Latitude { get; private set; }
         public double Altitude { get; private set; }
@@ -18,6 +19,10 @@ namespace FSX_Plane_Tracker
         public double Turn { get; private set; }
         public double Heading { get; private set; }
         public double VerticalSpeed { get; private set; }
+        public double GroundSpeed { get; private set; }
+        public double[] AirspeedData = new double[N];
+
+        private int cnt = 0;
 
         public void Update(PlaneStruct planeStructure)
         {
@@ -31,6 +36,9 @@ namespace FSX_Plane_Tracker
             Turn = planeStructure.turn;
             Heading = planeStructure.heading;
             VerticalSpeed = planeStructure.verticalSpeed;
+            GroundSpeed = planeStructure.groundSpeed;
+            AirspeedData[cnt] = Airspeed;
+            cnt = (cnt + 1) % cnt;
         }
     }
 
@@ -46,5 +54,6 @@ namespace FSX_Plane_Tracker
         public double turn;
         public double heading;
         public double verticalSpeed;
+        public double groundSpeed;
     }
 }
