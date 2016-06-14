@@ -21,6 +21,8 @@ namespace FSX_Plane_Tracker
         public double VerticalSpeed { get; private set; }
         public double GroundSpeed { get; private set; }
         public double[] AirspeedData = new double[N];
+        public List<double> y = new List<double>();
+        public List<double> x = new List<double>();
 
         private int cnt = 0;
 
@@ -37,8 +39,15 @@ namespace FSX_Plane_Tracker
             Heading = planeStructure.heading;
             VerticalSpeed = planeStructure.verticalSpeed;
             GroundSpeed = planeStructure.groundSpeed;
-            AirspeedData[cnt] = Airspeed;
-            cnt = (cnt + 1) % cnt;
+            //AirspeedData[cnt] = Airspeed;
+            //cnt = (cnt + 1) % N;
+            if (y.Count == N)
+            {
+                y.RemoveAt(0);
+                x.RemoveAt(0);
+            }
+            y.Add(Airspeed);
+            x.Add(cnt++);
         }
     }
 

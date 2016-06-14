@@ -8,33 +8,40 @@
         xmlns:db="clr-namespace:Codeplex.Dashboarding;assembly=Codeplex.Dashboarding"
         xmlns:d3="http://research.microsoft.com/DynamicDataDisplay/1.0" x:Name="mainWindow" x:Class="FSX_Plane_Tracker.MainWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="839" Width="968.5" Closing="Window_Closing">
+        Title="FSX Plane Tracker - Disconnected" Height="839" Width="968.5" Closing="Window_Closing">
     <Grid x:Name="mapGrid" Margin="0,15,0,264">
-        <Grid Height="250" Width="680" VerticalAlignment="Top">
-            <m:Map x:Name="viewmap" CredentialsProvider="AkIkAsKzzXkSWT54vfugNilSzxbrvckDvprWj-ZdpQ-WjbabgA-Rx75wJJ1Je8sf" Mode="AerialWithLabels" Margin="-104,10,-101,0"/>
+        <Grid Height="250" Width="680" VerticalAlignment="Top" HorizontalAlignment="Stretch" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="18*"/>
+                <RowDefinition Height="123*"/>
+                <RowDefinition Height="109*"/>
+            </Grid.RowDefinitions>
+            <m:Map x:Name="viewmap" CredentialsProvider="AkIkAsKzzXkSWT54vfugNilSzxbrvckDvprWj-ZdpQ-WjbabgA-Rx75wJJ1Je8sf" Mode="AerialWithLabels" Margin="-123,10,-123,-48" Grid.RowSpan="3"/>
         </Grid>
-        <Grid Height="277" VerticalAlignment="Bottom" Margin="10,0,10,-5">
+        <Grid Height="206" VerticalAlignment="Bottom" Margin="20,0,0,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="266*"/>
                 <RowDefinition Height="11*"/>
             </Grid.RowDefinitions>
-            <db:Dial360 x:Name="airSpeed" Minimum="0" Maximum="700" Value="0" Margin="16,18,764,77" FontSize="11" ValueTextColor="#FF00DCFF" ValueTextFormat="{}{0:0} knots" Height="Auto" Width="Auto" />
-            <TextBlock x:Name="debug" HorizontalAlignment="Left" Margin="584,14,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="182" Width="346"><Run Text="TextBlock"/></TextBlock>
-            <db:Dial360 x:Name="groundSpeed" Minimum="0" Maximum="700" Value="0" Margin="186,15,583,37" FontSize="11" ValueTextColor="#FF00DCFF" ValueTextFormat="{}{0:0} knots" Height="Auto" Width="Auto" />
-            <Label x:Name="lblAirspeed" Content="Airspeed" HorizontalAlignment="Left" Margin="62,180,0,0" VerticalAlignment="Top" Height="26" Width="57"/>
-            <Label x:Name="lblGroudspeed" Content="Groundspeed" HorizontalAlignment="Left" Margin="224,180,0,0" VerticalAlignment="Top" Height="26" Width="82"/>
-            <db:Dial180North x:Name="pitch" HorizontalAlignment="Left" Margin="362,14,0,0" VerticalAlignment="Top" ToolTip="Pitch" Minimum="-90" Maximum="90"/>
-            <Label x:Name="lblPitch" Content="Pitch" HorizontalAlignment="Left" Margin="429,111,0,0" VerticalAlignment="Top" Height="26" Width="36"/>
-            <db:Dial180North x:Name="tilt" HorizontalAlignment="Left" Margin="362,140,0,0" VerticalAlignment="Top" ToolTip="Pitch" Minimum="-90" Maximum="90"/>
-            <Label x:Name="lblTilt" Content="Tilt/Roll" HorizontalAlignment="Left" Margin="429,235,0,0" VerticalAlignment="Top" Height="26" Width="51"/>
+            <db:Dial360 x:Name="airSpeed" Minimum="0" Maximum="700" Value="0" Margin="53,15,727,46" FontSize="11" ValueTextColor="#FF00DCFF" ValueTextFormat="{}{0:0} knots" Height="Auto" Width="Auto" />
+            <TextBlock x:Name="debug" HorizontalAlignment="Left" Margin="584,14,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="182" Width="346" Visibility="Hidden"><Run Text="TextBlock"/></TextBlock>
+            <db:Dial360 x:Name="groundSpeed" Minimum="0" Maximum="700" Value="0" Margin="248,15,521,41" FontSize="11" ValueTextColor="#FF00DCFF" ValueTextFormat="{}{0:0} knots" Height="Auto" Width="Auto" />
+            <Label x:Name="lblAirspeed" Content="Airspeed" HorizontalAlignment="Left" Margin="99,180,0,0" VerticalAlignment="Top" Height="26" Width="57"/>
+            <Label x:Name="lblGroudspeed" Content="Groundspeed" HorizontalAlignment="Left" Margin="286,180,0,0" VerticalAlignment="Top" Height="26" Width="82"/>
+            <db:Dial180North x:Name="pitch" HorizontalAlignment="Left" Margin="476,55,0,0" VerticalAlignment="Top" ToolTip="Pitch" Minimum="-90" Maximum="90"/>
+            <Label x:Name="lblPitch" Content="Pitch" HorizontalAlignment="Left" Margin="540,150,0,0" VerticalAlignment="Top" Height="26" Width="36"/>
+            <db:Dial180North x:Name="tilt" HorizontalAlignment="Left" Margin="689,55,0,0" VerticalAlignment="Top" ToolTip="Pitch" Minimum="-90" Maximum="90"/>
+            <Label x:Name="lblTilt" Content="Tilt/Roll" HorizontalAlignment="Left" Margin="746,150,0,0" VerticalAlignment="Top" Height="26" Width="51"/>
         </Grid>
-        <Grid x:Name="airspeedMonitor" HorizontalAlignment="Left" Height="228" Margin="10,534,0,-262" VerticalAlignment="Top" Width="940">
-            <d3:ChartPlotter x:Name="plotter" Margin="0,8,0,-8">
+        <Grid x:Name="airspeedMonitor" HorizontalAlignment="Stretch" Height="228" Margin="10,534,0,-262" VerticalAlignment="Stretch" Width="940" >
+            <d3:ChartPlotter x:Name="plotter" Margin="0,8,10,-8" LegendVisible="False" ToolTip="Airspeed in time">
                 <d3:Header FontFamily="Georgia" Content="Airspeed chart"/>
                 <d3:VerticalAxisTitle FontFamily="Georgia" Content="Airspeed [m/s]" />
-                <d3:HorizontalAxisTitle FontFamily="Georgia" Content="Time"/>
-                <d3:HorizontalLine Value="{Binding MaxVoltage}" Stroke="Red" StrokeThickness="2"/>
-                <d3:HorizontalLine Value="{Binding MinVoltage}" Stroke="Red" StrokeThickness="2"/>
+                <d3:HorizontalAxisTitle FontFamily="Georgia" Content="Time [s]" >
+                    <d3:HorizontalAxisTitle.CacheMode>
+                        <BitmapCache/>
+                    </d3:HorizontalAxisTitle.CacheMode>
+                </d3:HorizontalAxisTitle>
             </d3:ChartPlotter>
         </Grid>
     </Grid>

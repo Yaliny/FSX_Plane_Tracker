@@ -3,6 +3,10 @@ using System;
 using System.Threading;
 using System.Windows;
 using Microsoft.Maps.MapControl.WPF;
+using Microsoft.Research.DynamicDataDisplay;
+using Microsoft.Research.DynamicDataDisplay.DataSources;
+using System.Collections.Generic;
+using System.Configuration;
 
 namespace FSX_Plane_Tracker
 {
@@ -11,13 +15,14 @@ namespace FSX_Plane_Tracker
     /// </summary>
     public partial class MainWindow : Window
     {
-        #region Memers
+        #region Members
         private static SimConnect sc = null;
         private static readonly Plane plane = new Plane();
         static Map flightmap;
         static Location center;
         static Location currentLocation;
         static double zoomLevel;
+        static bool pause;
         static LocationCollection route = new LocationCollection();
         EventWaitHandle scReady = new EventWaitHandle(false, EventResetMode.AutoReset);
         #endregion
@@ -29,6 +34,11 @@ namespace FSX_Plane_Tracker
         }
 
         enum DATA_REQUEST_ID { REQUEST_1 }
+        enum EVENT_ID
+        {
+            EVENT_PAUSE,
+            EVENT_BRAKES
+        };
         #endregion
 
         #region Simconnect Message
@@ -69,7 +79,7 @@ namespace FSX_Plane_Tracker
         public MainWindow()
         {
             InitializeComponent();
-
+            //viewmap.CredentialsProvider = new ApplicationIdCredentialsProvider(ConfigurationManager.AppSettings["BingMapsCredentialsProvider"].ToString());
             //mainWindow.Height = 600;
 
             var thread = new Thread(new ThreadStart(ConnectToSimConnect));
@@ -77,6 +87,7 @@ namespace FSX_Plane_Tracker
             center = viewmap.Center;
             flightmap = viewmap;
             currentLocation = new Location();
+            pause = false;
         }
         #endregion
 
@@ -94,6 +105,8 @@ namespace FSX_Plane_Tracker
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Heading Indicator", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "Vertical Speed", "ft/min", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
             sc.AddToDataDefinition(SIMCONNECT_DATA_DEFINITION_ID.planeLocation, "GPS GROUND SPEED", "m/s", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            sc.MapClientEventToSimEvent(EVENT_ID.EVENT_PAUSE, "pause_toggle");
+            sc.MapClientEventToSimEvent(EVENT_ID.EVENT_BRAKES, "brakes");
 
             sc.RegisterDataDefineStruct<PlaneStruct>(SIMCONNECT_DATA_DEFINITION_ID.planeLocation);
             sc.RequestDataOnSimObject(DATA_REQUEST_ID.REQUEST_1, SIMCONNECT_DATA_DEFINITION_ID.planeLocation, SimConnect.SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD.SECOND, 0, 0, 0, 0);
@@ -105,6 +118,20 @@ namespace FSX_Plane_Tracker
             sc.OnRecvQuit += new SimConnect.RecvQuitEventHandler(simconnect_OnRecvQuit);
             sc.OnRecvException += new SimConnect.RecvExceptionEventHandler(simconnect_OnRecvException);
             sc.OnRecvSimobjectData += new SimConnect.RecvSimobjectDataEventHandler(simconnect_OnRecvSimobjectData);
+            sc.OnRecvEvent += new SimConnect.RecvEventEventHandler(Sc_OnRecvEvent);
+        }
+
+        private static void Sc_OnRecvEvent(SimConnect sender, SIMCONNECT_RECV_EVENT data)
+        {
+            switch ((EVENT_ID)data.uEventID)
+            {
+                case EVENT_ID.EVENT_PAUSE:
+                    pause = !pause;
+                    break;
+                case EVENT_ID.EVENT_BRAKES:
+
+                    break;
+            }
         }
         #endregion
 
@@ -116,9 +143,15 @@ namespace FSX_Plane_Tracker
                 try
                 {
                     sc = new SimConnect("VE_SC_WPF", (IntPtr)0, 0, scReady, 0);
-                }
+                    this.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Normal, new Action(
+                    delegate ()
+                    {
+                        mainWindow.Title = mainWindow.Title.Replace("Disconnected", "Connected");
+                    }));
+                    }
                 catch (Exception)
                 {
+
                 }
 
                 Thread.Sleep(2000);
@@ -211,14 +244,47 @@ namespace FSX_Plane_Tracker
 
         void updateView()
         {
+            if (pause)
+            {
+                return;
+            }
             this.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Normal, new Action(
                 delegate ()
                 {
+                    //var source = DataSource.Create(plane.x, plane.y);
                     airSpeed.Value = plane.Airspeed;
                     groundSpeed.Value = plane.GroundSpeed;
                     pitch.Value = plane.Pitch;
                     tilt.Value = plane.Bank;
                     //airspeedMonitor.
+                    LineGraph line;
+                    List<Point> p = new List<Point>();
+                    for(int i = 0; i < 100 && i < plane.x.Count; i++)
+                    {
+                        p.Add(new Point(plane.x[i], plane.y[i]));
+                    }
+
+                    EnumerableDataSource<Point> ds = new EnumerableDataSource<Point>(p);
+
+                    //ds.SetXMapping(x => x);
+                    //ds.SetYMapping(y => plane.y);
+                    ds.SetXYMapping(x => x);
+                    line = new LineGraph(ds);
+                    line.LinePen = new System.Windows.Media.Pen(System.Windows.Media.Brushes.Red, 2);
+                    //plotter.Children.RemoveAll(x =>  x is LineGraph );
+                    foreach (var item in plotter.Children)
+                    {
+                        if (item is LineGraph)
+                        {
+                            plotter.Children.Remove(item);
+                            break;
+                        }
+                    }
+                    plotter.Children.Add(line);
+                    plotter.FitToView();
+                    //var chartLine = plotter.AddLineChart();
+                    //line = new LineGraph()
+                    //plotter.addLineChart(DataSource.Create)
                     debug.Text = String.Format("TRUE AS = {0}\nPITCH DEG = {1}\nBANK DEG = {2}\nHEADING DELTA = {3}\nTURN = {4}\nHEADING INDICATOR = {5}\nVERT SPEED = {6}", plane.Airspeed, plane.Pitch, plane.Bank, plane.Delta, plane.Turn, plane.Heading, plane.VerticalSpeed);
                 }
             ));
