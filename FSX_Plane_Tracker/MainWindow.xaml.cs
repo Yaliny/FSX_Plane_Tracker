@@ -79,6 +79,13 @@ namespace FSX_Plane_Tracker
         public MainWindow()
         {
             InitializeComponent();
+            var key = ConfigurationManager.AppSettings["BingMapsCredentialsProvider"];
+            if (String.IsNullOrEmpty(key))
+            {
+                return;
+            }
+
+            viewmap.CredentialsProvider = new ApplicationIdCredentialsProvider(key);
             //viewmap.CredentialsProvider = new ApplicationIdCredentialsProvider(ConfigurationManager.AppSettings["BingMapsCredentialsProvider"].ToString());
             //mainWindow.Height = 600;
 

@@ -16,7 +16,7 @@
                 <RowDefinition Height="123*"/>
                 <RowDefinition Height="109*"/>
             </Grid.RowDefinitions>
-            <m:Map x:Name="viewmap" CredentialsProvider="AkIkAsKzzXkSWT54vfugNilSzxbrvckDvprWj-ZdpQ-WjbabgA-Rx75wJJ1Je8sf" Mode="AerialWithLabels" Margin="-123,10,-123,-48" Grid.RowSpan="3"/>
+            <m:Map x:Name="viewmap" Mode="AerialWithLabels" Margin="-123,10,-123,-48" Grid.RowSpan="3"/>
         </Grid>
         <Grid Height="206" VerticalAlignment="Bottom" Margin="20,0,0,10">
             <Grid.RowDefinitions>
